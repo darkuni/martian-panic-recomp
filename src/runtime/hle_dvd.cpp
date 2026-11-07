@@ -1,5 +1,6 @@
 // Disc access: the SDK DVD library runs recompiled; /dev/di is serviced from
 // the extracted file tree using the disc's FST.
+#include <mutex>
 #include "hle.h"
 #include <vector>
 #include <map>
@@ -61,13 +62,29 @@ static bool dvd_read(uint32_t dst, uint32_t len, uint64_t off) {
     if (it == g_files.begin()) { fprintf(g_log, "[dvd] read %llX: before first file\n", (unsigned long long)off); return false; }
     --it;
     if (off >= it->off + it->size + 0x8000) { fprintf(g_log, "[dvd] read %llX: no file\n", (unsigned long long)off); return false; }
-    std::string p = g_root + "/files" + it->path;
-    FILE* f = fopen(p.c_str(), "rb");
-    if (!f) { fprintf(g_log, "[dvd] cannot open %s\n", p.c_str()); return false; }
+    // keep a few files open: games read in tiny pieces (Martian Panic's level loader reads 32 bytes at a
+    // time), and opening a file per read is slow on Windows (virus scanner hooks on every open)
+    struct Open { const FstFile* file; FILE* f; uint64_t used; };
+    static Open open_files[16] = {};
+    static uint64_t use_clock = 0;
+    static std::mutex mx;
+    std::lock_guard<std::mutex> lock(mx);
+    Open* slot = nullptr;
+    for (auto& o : open_files) if (o.f && o.file == &*it) { slot = &o; break; }
+    if (!slot) {
+        slot = &open_files[0];
+        for (auto& o : open_files) if (!o.f || o.used < slot->used) { slot = &o; if (!o.f) break; }
+        if (slot->f) fclose(slot->f);
+        std::string p = g_root + "/files" + it->path;
+        slot->f = fopen(p.c_str(), "rb");
+        slot->file = &*it;
+        if (!slot->f) { fprintf(g_log, "[dvd] cannot open %s\n", p.c_str()); return false; }
+    }
+    slot->used = ++use_clock;
+    FILE* f = slot->f;
     fseek(f, (long)(off - it->off), SEEK_SET);
     std::vector<uint8_t> buf(len, 0);
     size_t got = fread(buf.data(), 1, len, f);
-    fclose(f);
     memcpy(MEM + (dst & 0x9FFFFFFFu), buf.data(), len);
     static int logged = 0;
     static const int lim = getenv("DVDLOG") ? 1 << 30 : 200;

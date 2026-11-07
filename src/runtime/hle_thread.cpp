@@ -9,6 +9,7 @@
 // When a blocked host thread is resumed, OSLoadContext simply returns, which
 // unwinds SelectThread exactly like the real "OSSaveContext returned 1" path.
 #include "hle.h"
+#include "hostclock.h"
 #include "game.h"
 #include <mutex>
 #include <condition_variable>
@@ -225,7 +226,15 @@ void post_irq_after(uint32_t us, std::function<void(Ctx*)> fn) {
         for (;;) {
             if (q.empty()) { cv.wait(lk); continue; }
             auto due = q.front().due;
-            if (std::chrono::steady_clock::now() < due) { cv.wait_until(lk, due); continue; }
+            if (std::chrono::steady_clock::now() < due) {
+                // precise sleep, not cv.wait_until: on Windows a timed condition-variable wait rounds to
+                // the 15.6 ms system clock, which made every disc read take ~16 ms instead of 2 (Martian
+                // Panic reads its levels 32 bytes at a time: minutes of loading screen)
+                lk.unlock();
+                precise_sleep_until(due);
+                lk.lock();
+                continue;
+            }
             auto fn = std::move(q.front().fn);
             q.pop_front();
             lk.unlock();

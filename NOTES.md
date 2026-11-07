@@ -38,6 +38,11 @@ Same recompiler and runtime as Zack & Wiki, TARGET: Terror and Lost in Shadow.
   refresh, and the level load crawled at ~4 fps for minutes. Now the context stays with the last guest thread
   that used GX, and a thread that needs it asks the holder (blocked in switch_to) to let go.
 
+- Disc reads: the level loader reads 32 bytes at a time, thousands of times. The 2 ms async completion delay
+  waited on a condition variable with a deadline, which winpthreads rounds to the 15.6 ms system clock: ~16 ms
+  per read on Windows, minutes of loading screen (4-5 fps there is normal: Core::Sleep(200) per frame). It now
+  uses the precise sleep, and dvd_read keeps up to 16 files open.
+
 ## Status / open issues
 - Boots through the strap / Zapper screens, the Zoo and n-Fusion logos, the title, the menus (Play Game, Single
   Wield, 1 player, character, stage, skill level) into the first stage ("When Donuts Collide"): shooting, score,
