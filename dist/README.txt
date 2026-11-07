@@ -14,12 +14,18 @@ Requirements: 64-bit Windows 10/11, or 64-bit Linux with SDL2 (SteamOS has it; e
 libsdl2 / sdl2 from your package manager); a GPU with OpenGL 3.3.
 
 Controls (Wii Remote / Wii Zapper)
-  Mouse:    point = Wii Remote pointer, left button = A, right button = B ("Mouse buttons" in the
-            settings menu, or controls = mouse_swap in martianpanic.ini, swaps them)
-  Gamepad:  either stick = pointer, A = A, B or RB/RT = B (trigger), X/Y = 1/2, d-pad = d-pad,
-            Start = +, Back = -, Guide = HOME
-  Keyboard: X = A, Space or Z = B (trigger), A/S = 1/2, arrows = d-pad, I/J/K/L = pointer,
-            Enter = +, Backspace = -, H = HOME
+  Shooting is B (the trigger); menus take A. Reload = point away from the screen, which the
+  reload button does for you.
+  Mouse:    point = Wii Remote pointer, left button = A, right button = B (fire), middle button
+            = reload ("Mouse buttons" in the settings menu, or controls = mouse_swap in
+            martianpanic.ini, swaps left and right)
+  Gamepad:  either stick = pointer, A = A, B or RB/RT = B (fire), LB/LT = reload, X/Y = 1/2,
+            d-pad = d-pad, Start = +, Back = -, Guide = HOME
+  Keyboard: X = A, Space or Z = B (fire), V = reload, A/S = 1/2, arrows = d-pad,
+            I/J/K/L = pointer, Enter = +, Backspace = -, H = HOME
+
+Wii Remote motions (hold Ctrl and move the mouse: left/right twists, up/down tilts, fast moves
+are swings; Q/E and R/F on the keyboard)
 
 Real Wii Remote (optional)
   Pair it with Windows: Settings > Bluetooth > Add device, press the red SYNC button under the

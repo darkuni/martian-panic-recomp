@@ -239,6 +239,9 @@ void hle_KPADRead(Ctx* c) {
             p = strchr(p, ';'); if (p) p++;
         }
     }
+#ifdef G_RELOAD_OFFSCREEN
+    if (in.reload) { px = -0.25f; py = 0.5f; valid = true; }   // aim just past the left edge of the picture
+#endif
     float x = px * 2.f - 1.f, y = py * 2.f - 1.f;   // KPAD pos: -1..1 across the picture, y down
     for (uint32_t i = 0; i < G_KPAD_STATUS_SIZE; i++) W8(buf + i, 0);
     W32(buf + 0x00, hold);

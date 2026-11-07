@@ -158,7 +158,12 @@ static bool update_motion(float dt, bool focus, Uint32 mb, float srx, float sry)
     static float t = 0;
     t += dt;
     const Uint8* k = SDL_GetKeyboardState(nullptr);
-    bool want = focus && !overlay_open() && ((mb & SDL_BUTTON(SDL_BUTTON_MIDDLE)) || k[SDL_SCANCODE_LCTRL] || k[SDL_SCANCODE_RCTRL]);
+#ifdef G_RELOAD_OFFSCREEN
+    const bool mid_motion = false;   // the middle button reloads in this game; Ctrl still turns the remote
+#else
+    const bool mid_motion = true;
+#endif
+    bool want = focus && !overlay_open() && ((mid_motion && (mb & SDL_BUTTON(SDL_BUTTON_MIDDLE))) || k[SDL_SCANCODE_LCTRL] || k[SDL_SCANCODE_RCTRL]);
     if (want != mode) {
         mode = want;
         SDL_SetRelativeMouseMode(want ? SDL_TRUE : SDL_FALSE);
@@ -341,6 +346,12 @@ static void update_input() {
     update_pointer(rx, ry, 0, 0);   // left stick = Nunchuk stick, right stick = pointer
 #else
     update_pointer(lx, ly, rx, ry);
+#endif
+#ifdef G_RELOAD_OFFSCREEN
+    // reload by pointing away from the screen: middle mouse button, V, or LB / LT on a gamepad
+    g_host_input.reload = (g_host_input.mouse & MOUSE_M) || k[SDL_SCANCODE_V] ||
+        (g_pad && (SDL_GameControllerGetButton(g_pad, SDL_CONTROLLER_BUTTON_LEFTSHOULDER) ||
+                   SDL_GameControllerGetAxis(g_pad, SDL_CONTROLLER_AXIS_TRIGGERLEFT) > 16000));
 #endif
     if (overlay_open()) { b = 0; lx = ly = rx = ry = lt = rt = 0; g_host_input.mouse = 0; g_host_input.reload = false; }   // the menu owns the controls while open
     g_host_input.rx = std::max(-1.f, std::min(1.f, rx));

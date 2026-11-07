@@ -20,3 +20,4 @@
 #define G_FN_OS_ENABLE_SCHEDULER  f_800B35F0
 #define G_FN_OS_RESCHEDULE        f_800B3AFC  // __OSReschedule after the handlers
 #define G_IOS_ASYNC_DELAY_US    2000u         // async IOS requests (disc reads) complete 2 ms later (hle_ios.cpp)
+#define G_RELOAD_OFFSCREEN      1             // reload = aim off the picture (Weapon::CheckForReload): middle mouse / V / LB / LT

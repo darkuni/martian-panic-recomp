@@ -26,9 +26,15 @@ Same recompiler and runtime as Zack & Wiki, TARGET: Terror and Lost in Shadow.
   glow pass (WiiGraphics::RenderPostProcess) masks the bright pass with EFB alpha and draws the scene with a
   constant alpha of 3 (0 in RGBA6); without this every surface glowed and gameplay came out white.
 
+## Input
+- Light gun: B fires, A works the menus. Reload is Weapon::CheckForReload: the aim (pixels) outside 640x448. The
+  reload button (G_RELOAD_OFFSCREEN: middle mouse, V, LB/LT) puts the pointer just left of the picture; mouse
+  motions use Ctrl only in this game.
+
 ## Status / open issues
 - Boots through the strap / Zapper screens, the Zoo and n-Fusion logos, the title, the menus (Play Game, Single
-  Wield, 1 player, character, stage, skill level) and into the first stage ("When Donuts Collide").
+  Wield, 1 player, character, stage, skill level) into the first stage ("When Donuts Collide"): shooting, score,
+  damage, the Failure screen; music and effects play.
 
 ## Testing
 - Same switches as the other recomps: `POINTER=x,y` (or a timeline: `POINTER=x,y;x,y@frame;...`, frames with
