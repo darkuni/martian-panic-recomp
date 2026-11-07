@@ -23,3 +23,9 @@ void post_irq_after(uint32_t us, std::function<void(Ctx*)> fn);   // device comp
 
 // Threads
 void threads_init_main(Ctx* c);
+
+// timing diagnostics (printed with the 10 s status line)
+#include <atomic>
+extern std::atomic<uint64_t> g_diag_dvd, g_diag_dvd_us, g_diag_dec, g_diag_dec_late_us, g_diag_dec_late_max,
+    g_diag_ios, g_diag_ios_late_us, g_diag_ios_late_max, g_diag_irq_lat_us, g_diag_irq_lat_max, g_diag_irq_n,
+    g_diag_newthreads;

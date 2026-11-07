@@ -1,6 +1,7 @@
 // Disc access: the SDK DVD library runs recompiled; /dev/di is serviced from
 // the extracted file tree using the disc's FST.
 #include <mutex>
+#include <chrono>
 #include "hle.h"
 #include <vector>
 #include <map>
@@ -58,6 +59,9 @@ void dvd_init(const char* root) {
 
 // Read `len` bytes at partition offset `off` into guest memory.
 static bool dvd_read(uint32_t dst, uint32_t len, uint64_t off) {
+    auto diag_t0 = std::chrono::steady_clock::now();
+    struct DiagDone { std::chrono::steady_clock::time_point t0; ~DiagDone() {
+        g_diag_dvd++; g_diag_dvd_us += (uint64_t)std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - t0).count(); } } diag_done{diag_t0};
     auto it = std::upper_bound(g_files.begin(), g_files.end(), off, [](uint64_t o, const FstFile& f) { return o < f.off; });
     if (it == g_files.begin()) { fprintf(g_log, "[dvd] read %llX: before first file\n", (unsigned long long)off); return false; }
     --it;

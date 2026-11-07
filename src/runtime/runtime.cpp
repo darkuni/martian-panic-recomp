@@ -378,6 +378,24 @@ static void guest_threads_dump() {
 // Hang watchdog: if no frame reaches the screen for 8 s, write a report next to the executable
 // (and to the log) so a freeze on someone else's machine can be diagnosed.
 static std::string g_exe_dir;
+std::atomic<uint64_t> g_diag_dvd{0}, g_diag_dvd_us{0}, g_diag_dec{0}, g_diag_dec_late_us{0}, g_diag_dec_late_max{0},
+    g_diag_ios{0}, g_diag_ios_late_us{0}, g_diag_ios_late_max{0}, g_diag_irq_lat_us{0}, g_diag_irq_lat_max{0}, g_diag_irq_n{0},
+    g_diag_newthreads{0};
+static void diag_line() {
+    extern std::atomic<unsigned long> g_irq_posted, g_switches;
+    extern std::atomic<uint64_t> g_idle_ns;
+    auto x = [](std::atomic<uint64_t>& a) { return (unsigned long long)a.exchange(0); };
+    static unsigned long lp = 0, ls = 0; static uint64_t li = 0;
+    unsigned long p = g_irq_posted.load(), sw = g_switches.load(); uint64_t idle = g_idle_ns.load();
+    unsigned long long dvd = x(g_diag_dvd), dvdus = x(g_diag_dvd_us), dec = x(g_diag_dec), decl = x(g_diag_dec_late_us),
+        decm = x(g_diag_dec_late_max), ios = x(g_diag_ios), iosl = x(g_diag_ios_late_us), iosm = x(g_diag_ios_late_max),
+        irql = x(g_diag_irq_lat_us), irqm = x(g_diag_irq_lat_max), irqn = x(g_diag_irq_n), nt = x(g_diag_newthreads);
+    fprintf(LOG, "[timing] 10s: irqs %lu, switches %lu, idle %llu ms, new threads %llu | disc reads %llu (%llu us in file io) | "
+                 "decrementer %llu late avg %llu max %llu us | async ios %llu late avg %llu max %llu us | irq wait avg %llu max %llu us\n",
+            p - lp, sw - ls, (unsigned long long)((idle - li) / 1000000), nt, dvd, dvdus, dec, dec ? decl / dec : 0, decm,
+            ios, ios ? iosl / ios : 0, iosm, irqn ? irql / irqn : 0, irqm);
+    lp = p; ls = sw; li = idle;
+}
 static void hang_watchdog() {
     extern uint64_t gx_frame_count();
     extern uint64_t g_vi_count;
@@ -391,8 +409,10 @@ static void hang_watchdog() {
 #ifdef _WIN32
             extern std::atomic<unsigned long> g_ui_polls;
             fprintf(LOG, "[status] %d s: frame %llu, VI %llu, ui polls %lu\n", tick, (unsigned long long)f, (unsigned long long)g_vi_count, g_ui_polls.load());
+            diag_line();
 #else
             fprintf(LOG, "[status] %d s: frame %llu, VI %llu\n", tick, (unsigned long long)f, (unsigned long long)g_vi_count);
+            diag_line();
             if (const char* pk = getenv("PEEK")) {   // PEEK=addr,addr,...: print guest words with the status line
                 fprintf(LOG, "[peek]");
                 for (const char* q = pk; *q;) { uint32_t a = (uint32_t)strtoul(q, (char**)&q, 16); fprintf(LOG, " %08X=%08X", a, R32(a)); if (*q == ',') q++; else break; }

@@ -108,6 +108,11 @@ static void dec_thread() {
             lk.lock();
             continue;
         }
+        {
+            uint64_t late = (now_ns() - dl) / 1000;
+            g_diag_dec++; g_diag_dec_late_us += late;
+            { uint64_t _v = late, _m = g_diag_dec_late_max.load(); while (_v > _m && !g_diag_dec_late_max.compare_exchange_weak(_m, _v)) {} }
+        }
         dec_deadline_ns = 0;
         lk.unlock();
         post_irq([](Ctx* c) {

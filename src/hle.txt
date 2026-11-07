@@ -54,6 +54,7 @@ WPADGetDataFormat
 WPADControlDpd = 0
 WPADRead            # raw status: Geometry Wars reads Classic/Nunchuk this way
 OSExitThread = wrap
+OSCreateThread = wrap
 WPADSetSamplingCallback = 0
 WPADGetInfo         # Lost in Shadow checks the battery
 WPADIsDpdEnabled = 1

@@ -157,6 +157,20 @@ void hle_wrap_OSExitThread(Ctx* c, GuestFn orig) {
     orig(c);
 }
 
+// OSCreateThread on a context that belongs to an earlier (finished) thread: that host thread must start over at
+// the new entry point when the context is next loaded. Deciding it here is exact; the check in OSLoadContext
+// (exiting + rewritten SRR0) is kept as a fallback.
+void hle_wrap_OSCreateThread(Ctx* c, GuestFn orig) {
+    uint32_t th = c->r[3];
+    orig(c);
+    if (c->r[3] == 0) return;   // creation failed
+    auto it = g_owner.find(th);
+    if (it != g_owner.end() && it->second != t_self) {
+        it->second->restart = true;
+        it->second->exiting = true;
+    }
+}
+
 void hle_OSLoadContext(Ctx* c) {
     uint32_t g = c->r[3];
     if (t_in_irq && g == t_irq_ctx) return;      // exception return to the interrupted context
@@ -165,6 +179,10 @@ void hle_OSLoadContext(Ctx* c) {
         if (it->second == t_self) return;          // resuming ourselves (e.g. after an interrupt)
         // exited thread's context reused by OSCreateThread (not just the exiting thread selected again)
         if (it->second->exiting && R32(g + CTX_SRR0) != it->second->saved_pc) it->second->restart = true;
+        else if (it->second->exiting && !it->second->restart) {
+            static int n = 0;
+            if (n++ < 20) fprintf(g_log, "[thread] resume exiting context %08X srr0 %08X saved %08X (no restart)\n", g, R32(g + CTX_SRR0), it->second->saved_pc);
+        }
         switch_to(it->second);
         return;
     }
@@ -176,6 +194,7 @@ void hle_OSLoadContext(Ctx* c) {
     uint32_t entry = R32(g + CTX_SRR0);
     g_owner[g] = h;
     fprintf(g_log, "[thread] start context %08X entry %08X sp %08X\n", g, entry, h->ctx.r[1]);
+    g_diag_newthreads++;
     h->th = std::thread(thread_main, h, entry);
     h->th.detach();
     g_threads.push_back(std::move(ht));
@@ -235,6 +254,11 @@ void post_irq_after(uint32_t us, std::function<void(Ctx*)> fn) {
                 lk.lock();
                 continue;
             }
+            {
+                uint64_t late = (uint64_t)std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - due).count();
+                g_diag_ios++; g_diag_ios_late_us += late;
+                { uint64_t _v = late, _m = g_diag_ios_late_max.load(); while (_v > _m && !g_diag_ios_late_max.compare_exchange_weak(_m, _v)) {} }
+            }
             auto fn = std::move(q.front().fn);
             q.pop_front();
             lk.unlock();
@@ -250,8 +274,15 @@ void post_irq_after(uint32_t us, std::function<void(Ctx*)> fn) {
 }
 
 void post_irq(std::function<void(Ctx*)> fn) {
+    auto posted = std::chrono::steady_clock::now();
+    std::function<void(Ctx*)> timed = [posted, fn = std::move(fn)](Ctx* c) {
+        uint64_t lat = (uint64_t)std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - posted).count();
+        g_diag_irq_n++; g_diag_irq_lat_us += lat;
+        { uint64_t _v = lat, _m = g_diag_irq_lat_max.load(); while (_v > _m && !g_diag_irq_lat_max.compare_exchange_weak(_m, _v)) {} }
+        fn(c);
+    };
     std::lock_guard<std::mutex> g(g_qmx);
-    g_irq_q.push_back(std::move(fn));
+    g_irq_q.push_back(std::move(timed));
     g_irq_posted++;
     g_irq_pending.store(1);
     g_irq_cv.notify_all();

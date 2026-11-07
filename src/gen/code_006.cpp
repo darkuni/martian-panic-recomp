@@ -15721,8 +15721,9 @@ void f_800B3B14(Ctx* __restrict c) {
   return; // 800B3B4C
 }
 
+void f_800B3B50_orig(Ctx* __restrict c);
 // OSCreateThread
-void f_800B3B50(Ctx* __restrict c) {
+void f_800B3B50_orig(Ctx* __restrict c) {
   trace_call(0x800B3B50u);
   {uint32_t ea=c->r[1]+0xFFFFFFE0u; W32(ea,c->r[1]); c->r[1]=ea;} // 800B3B50
   c->r[0]=c->lr; // 800B3B54
@@ -15887,6 +15888,8 @@ L_800B3DA4:;
   c->r[1]=c->r[1]+0x00000020u; // 800B3DB4
   return; // 800B3DB8
 }
+void hle_wrap_OSCreateThread(Ctx*, GuestFn);
+void f_800B3B50(Ctx* __restrict c) { hle_wrap_OSCreateThread(c, f_800B3B50_orig); }
 
 void f_800B3DBC_orig(Ctx* __restrict c);
 // OSExitThread
