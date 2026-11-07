@@ -20,8 +20,15 @@ Same recompiler and runtime as Zack & Wiki, TARGET: Terror and Lost in Shadow.
 - KPADStatus stride 0xF0 (KPADiRead: mulli 0xF0). Interrupt handlers run with the scheduler disabled and async IOS
   requests complete 2 ms later, as in Lost in Shadow.
 
+## Renderer
+- Destination alpha (BP 0x42 bit 8): with alpha writes on, the EFB alpha gets the constant instead of the TEV
+  alpha, while blending still uses the TEV alpha (GL: separate alpha blend func with GL_CONSTANT_ALPHA). The game's
+  glow pass (WiiGraphics::RenderPostProcess) masks the bright pass with EFB alpha and draws the scene with a
+  constant alpha of 3 (0 in RGBA6); without this every surface glowed and gameplay came out white.
+
 ## Status / open issues
-- Boots through the strap / Zapper screens, the Zoo and n-Fusion logos, the title and the menus (pointer works).
+- Boots through the strap / Zapper screens, the Zoo and n-Fusion logos, the title, the menus (Play Game, Single
+  Wield, 1 player, character, stage, skill level) and into the first stage ("When Donuts Collide").
 
 ## Testing
 - Same switches as the other recomps: `POINTER=x,y` (or a timeline: `POINTER=x,y;x,y@frame;...`, frames with

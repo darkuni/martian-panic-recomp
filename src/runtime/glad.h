@@ -11,6 +11,9 @@
   X(PFNGLBINDVERTEXARRAYPROC, glBindVertexArray) \
   X(PFNGLBLENDEQUATIONPROC, glBlendEquation) \
   X(PFNGLBLENDFUNCPROC, glBlendFunc) \
+  X(PFNGLBLENDCOLORPROC, glBlendColor) \
+  X(PFNGLBLENDEQUATIONSEPARATEPROC, glBlendEquationSeparate) \
+  X(PFNGLBLENDFUNCSEPARATEPROC, glBlendFuncSeparate) \
   X(PFNGLBLITFRAMEBUFFERPROC, glBlitFramebuffer) \
   X(PFNGLBUFFERDATAPROC, glBufferData) \
   X(PFNGLCHECKFRAMEBUFFERSTATUSPROC, glCheckFramebufferStatus) \
@@ -92,6 +95,9 @@ GL_FUNCS(GL_DECLARE)
 #define glBindVertexArray p_glBindVertexArray
 #define glBlendEquation p_glBlendEquation
 #define glBlendFunc p_glBlendFunc
+#define glBlendColor p_glBlendColor
+#define glBlendEquationSeparate p_glBlendEquationSeparate
+#define glBlendFuncSeparate p_glBlendFuncSeparate
 #define glBlitFramebuffer p_glBlitFramebuffer
 #define glBufferData p_glBufferData
 #define glCheckFramebufferStatus p_glCheckFramebufferStatus

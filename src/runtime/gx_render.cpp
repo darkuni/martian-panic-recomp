@@ -700,15 +700,26 @@ static void apply_state() {
     glColorMask((cm >> 3) & 1, (cm >> 3) & 1, (cm >> 3) & 1, has_alpha && ((cm >> 4) & 1));
     static const GLenum sf[8] = {GL_ZERO, GL_ONE, GL_DST_COLOR, GL_ONE_MINUS_DST_COLOR, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_DST_ALPHA, GL_ONE_MINUS_DST_ALPHA};
     static const GLenum df[8] = {GL_ZERO, GL_ONE, GL_SRC_COLOR, GL_ONE_MINUS_SRC_COLOR, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_DST_ALPHA, GL_ONE_MINUS_DST_ALPHA};
+    // destination alpha (cmode1 bit 8): the EFB gets this constant instead of the TEV alpha; blending still
+    // uses the TEV alpha. RGBA6 keeps 6 bits of it. (Martian Panic marks what glows in EFB alpha and writes
+    // the rest of the scene with a constant 0.)
+    uint32_t cm1 = bp[0x42];
+    bool dst_const = has_alpha && ((cm >> 4) & 1) && ((cm1 >> 8) & 1) && !(((cm >> 1) & 1) && !(cm & 1));
+    if (dst_const) glBlendColor(0, 0, 0, (float)((cm1 & 0xFF) >> 2) / 63.f);
     if ((cm >> 11) & 1) {
-        glEnable(GL_BLEND); glBlendEquation(GL_FUNC_REVERSE_SUBTRACT); glBlendFunc(GL_ONE, GL_ONE);
+        glEnable(GL_BLEND);
+        if (dst_const) { glBlendEquationSeparate(GL_FUNC_REVERSE_SUBTRACT, GL_FUNC_ADD); glBlendFuncSeparate(GL_ONE, GL_ONE, GL_CONSTANT_ALPHA, GL_ZERO); }
+        else { glBlendEquation(GL_FUNC_REVERSE_SUBTRACT); glBlendFunc(GL_ONE, GL_ONE); }
     } else if (cm & 1) {
         GLenum s = sf[(cm >> 8) & 7], d = df[(cm >> 5) & 7];
         if (!has_alpha) {   // no destination alpha: reads as 1.0
             if (s == GL_DST_ALPHA) s = GL_ONE; else if (s == GL_ONE_MINUS_DST_ALPHA) s = GL_ZERO;
             if (d == GL_DST_ALPHA) d = GL_ONE; else if (d == GL_ONE_MINUS_DST_ALPHA) d = GL_ZERO;
         }
-        glEnable(GL_BLEND); glBlendEquation(GL_FUNC_ADD); glBlendFunc(s, d);
+        glEnable(GL_BLEND); glBlendEquation(GL_FUNC_ADD);
+        if (dst_const) glBlendFuncSeparate(s, d, GL_CONSTANT_ALPHA, GL_ZERO); else glBlendFunc(s, d);
+    } else if (dst_const) {
+        glEnable(GL_BLEND); glBlendEquation(GL_FUNC_ADD); glBlendFuncSeparate(GL_ONE, GL_ZERO, GL_CONSTANT_ALPHA, GL_ZERO);
     } else glDisable(GL_BLEND);
     if ((cm >> 1) & 1 && !(cm & 1)) {
         static const GLenum lo[16] = {GL_CLEAR, GL_AND, GL_AND_REVERSE, GL_COPY, GL_AND_INVERTED, GL_NOOP, GL_XOR, GL_OR,
