@@ -8,12 +8,13 @@ with a small runtime that replaces the Wii hardware, IOS and the DSP.
 
 ## Status
 
-Work in progress. Boots through the safety and Wii Zapper screens, the publisher logos, the title screen and the
-menus (Linux headless tests). Controls: the mouse (or the right stick) is the Wii Remote pointer, and a real Wii
-Remote paired over Bluetooth works for buttons, motion and pointer.
+Playable. Boots through the strap and Wii Zapper screens, the title and the menus into the stages: shooting, reload,
+score, damage, music and effects. Controls: the mouse (or the right stick) is the Wii Remote pointer, left button fires;
+a real Wii Remote paired over Bluetooth works for buttons, motion and pointer. Not every stage has been checked.
 
 ## Download
 
+Releases: https://github.com/darkuni/martian-panic-recomp/releases (Windows zip and Linux tar.gz).
 Test builds: GitHub Actions (Windows zip and Linux tar.gz). Unpack, put your disc image in the same folder and run
 `martianpanic.exe` (Windows) or `./martianpanic` (Linux): the first start builds the `game` folder from it. The
 zip's `README.txt` has the controls.
