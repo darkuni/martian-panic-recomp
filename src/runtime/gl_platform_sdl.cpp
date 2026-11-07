@@ -118,8 +118,10 @@ void gl_platform_release() {
     t_current = false;
 }
 
+void gl_owner_prepare();
 void gl_platform_make_current() {
     if (t_current) return;
+    gl_owner_prepare();   // the holder (another guest thread) releases it first
     if (SDL_GL_MakeCurrent(g_win, g_glc) != 0) {
         static int n = 0;
         if (n++ < 5) fprintf(stderr, "[gl] MakeCurrent failed: %s\n", SDL_GetError());
@@ -235,6 +237,12 @@ static void update_pointer(float lx, float ly, float rx, float ry) {
         if (mb & SDL_BUTTON(SDL_BUTTON_LEFT)) m |= MOUSE_L;
         if (mb & SDL_BUTTON(SDL_BUTTON_RIGHT)) m |= MOUSE_R;
         if (mb & SDL_BUTTON(SDL_BUTTON_MIDDLE)) m |= MOUSE_M;
+    }
+    {   // "Capture mouse": confine the cursor to the window while the game has the keyboard focus
+        static int grabbed = -1;
+        bool kfocus = (SDL_GetWindowFlags(g_win) & SDL_WINDOW_INPUT_FOCUS) != 0;
+        int want = g_cfg.capture_mouse && kfocus && !overlay_open();
+        if (want != grabbed) { SDL_SetWindowGrab(g_win, want ? SDL_TRUE : SDL_FALSE); grabbed = want; }
     }
     bool motion = update_motion(dt, focus, mb, rx, ry);   // simulated Wii Remote motion (right stick, keys, mouse)
     if (motion) { mx = last_mx; my = last_my; }            // the pointer stays put while the mouse turns the remote

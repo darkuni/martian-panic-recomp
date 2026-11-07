@@ -16,9 +16,10 @@ libsdl2 / sdl2 from your package manager); a GPU with OpenGL 3.3.
 Controls (Wii Remote / Wii Zapper)
   Shooting is B (the trigger); menus take A. Reload = point away from the screen, which the
   reload button does for you.
-  Mouse:    point = Wii Remote pointer, left button = A, right button = B (fire), middle button
-            = reload ("Mouse buttons" in the settings menu, or controls = mouse_swap in
-            martianpanic.ini, swaps left and right)
+  Mouse:    point = Wii Remote pointer, left button = B (fire), right button = A, middle button
+            = reload. "Mouse buttons" in the settings menu (or controls = mouse / mouse_swap in
+            martianpanic.ini) swaps left and right. "Capture mouse" (capture_mouse = 1) keeps
+            the cursor inside the window while you play.
   Gamepad:  either stick = pointer, A = A, B or RB/RT = B (fire), LB/LT = reload, X/Y = 1/2,
             d-pad = d-pad, Start = +, Back = -, Guide = HOME
   Keyboard: X = A, Space or Z = B (fire), V = reload, A/S = 1/2, arrows = d-pad,

@@ -20,6 +20,7 @@ struct Config {
     bool wiimote = true;               // use a real Wii Remote paired over Bluetooth when one is found
     float ir_span = 0.55f;             // real remote: share of the IR camera's view that covers the screen
     float motion_sensitivity = 1.0f;   // simulated motions: how far the mouse turns the remote
+    bool capture_mouse = false;        // keep the mouse cursor inside the window while the game has focus
 };
 extern Config g_cfg;
 void config_load(const char* exe_path);

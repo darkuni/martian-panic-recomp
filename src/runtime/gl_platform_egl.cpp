@@ -30,8 +30,10 @@ bool gl_platform_init(int, int) {
     return true;
 }
 static thread_local bool t_current = false;
+void gl_owner_prepare();
 void gl_platform_make_current() {
     if (t_current) return;
+    gl_owner_prepare();   // the holder (another guest thread) releases it first
     if (!eglMakeCurrent(g_dpy, EGL_NO_SURFACE, EGL_NO_SURFACE, g_ctx)) {
         static int n = 0;
         if (n++ < 5) fprintf(stderr, "[gl] eglMakeCurrent failed (%x): context still current on another thread\n", eglGetError());

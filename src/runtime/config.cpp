@@ -25,6 +25,7 @@ static void set(const std::string& k, const std::string& v) {
     else if (k == "wiimote") g_cfg.wiimote = b();
     else if (k == "ir_span") { float f = (float)atof(v.c_str()); g_cfg.ir_span = f < 0.2f ? 0.2f : f > 1.5f ? 1.5f : f; }
     else if (k == "motion_sensitivity") { float f = (float)atof(v.c_str()); g_cfg.motion_sensitivity = f < 0.2f ? 0.2f : f > 5.f ? 5.f : f; }
+    else if (k == "capture_mouse") g_cfg.capture_mouse = b();
     else if (k == "msaa") { int a = atoi(v.c_str()); g_cfg.msaa = a >= 8 ? 8 : a >= 4 ? 4 : a >= 2 ? 2 : 1; }
 }
 
@@ -38,6 +39,9 @@ void config_load(const char* exe_path) {
     std::string dir = exe_path ? exe_path : "";
     size_t slash = dir.find_last_of("/\\");
     dir = slash == std::string::npos ? "" : dir.substr(0, slash + 1);
+#ifdef G_MOUSE_SWAP_DEFAULT
+    g_cfg.controls = "mouse_swap";   // the trigger (B) on the left button
+#endif
     std::string paths[2] = {GAME_INI, dir + GAME_INI};
     FILE* f = nullptr;
     for (auto& p : paths) if ((f = fopen(p.c_str(), "r"))) { g_ini_path = p; break; }
@@ -55,7 +59,7 @@ void config_load(const char* exe_path) {
         fclose(f);
     }
     const char* keys[] = {"resolution_scale", "vsync", "widescreen", "fullscreen", "window_scale", "controls", "show_perf",
-                          "anisotropy", "smooth_textures", "msaa", "speed", "swap_ab_xy"};
+                          "anisotropy", "smooth_textures", "msaa", "speed", "swap_ab_xy", "capture_mouse"};
     for (const char* k : keys) {
         std::string env = k;
         std::transform(env.begin(), env.end(), env.begin(), ::toupper);
@@ -81,6 +85,8 @@ void config_save() {
         "window_scale = %d\n"
         "; Mouse buttons: mouse (left = A, right = B) or mouse_swap (left = B, right = A)\n"
         "controls = %s\n"
+        "; Keep the mouse cursor inside the window while the game has focus (1 = yes)\n"
+        "capture_mouse = %d\n"
         "; Gamepad: swap A<->B and X<->Y (use the buttons by position, Nintendo style)\n"
         "swap_ab_xy = %d\n"
         "; Show frame rate in the corner of the screen and the console\n"
@@ -99,10 +105,14 @@ void config_save() {
         "; Real Wii Remote pointer: how much of the IR camera's view covers the screen (smaller = less\n"
         "; arm movement). 0.55 suits a sensor bar about 2-3 m away.\n"
         "ir_span = %.2f\n"
+#ifdef G_RELOAD_OFFSCREEN
+        "; Simulated motions (hold Ctrl and move the mouse): turning speed\n"
+#else
         "; Simulated motions (hold the middle mouse button or Ctrl and move the mouse): turning speed\n"
+#endif
         "motion_sensitivity = %.2f\n",
         g_cfg.resolution_scale, g_cfg.widescreen, g_cfg.vsync, g_cfg.fullscreen, g_cfg.window_scale,
-        g_cfg.controls.c_str(), g_cfg.swap_ab_xy, g_cfg.show_perf, g_cfg.anisotropy, g_cfg.smooth_textures, g_cfg.msaa, g_cfg.speed,
+        g_cfg.controls.c_str(), g_cfg.capture_mouse, g_cfg.swap_ab_xy, g_cfg.show_perf, g_cfg.anisotropy, g_cfg.smooth_textures, g_cfg.msaa, g_cfg.speed,
         g_cfg.wiimote, g_cfg.ir_span, g_cfg.motion_sensitivity);
     fclose(w);
 }

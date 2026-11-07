@@ -31,6 +31,13 @@ Same recompiler and runtime as Zack & Wiki, TARGET: Terror and Lost in Shadow.
   reload button (G_RELOAD_OFFSCREEN: middle mouse, V, LB/LT) puts the pointer just left of the picture; mouse
   motions use Ctrl only in this game.
 
+## Threads and the GL context
+- The level loader spawns a short-lived thread per sound-file read (DVDSoundReadFunc, ~2000 per level) and polls
+  it with 1 ms OSSleepTicks, so it switches guest threads dozens of times per frame. Each switch used to release
+  the GL context (so the next thread could do GX work); on Windows that is a driver flush and waits for the display
+  refresh, and the level load crawled at ~4 fps for minutes. Now the context stays with the last guest thread
+  that used GX, and a thread that needs it asks the holder (blocked in switch_to) to let go.
+
 ## Status / open issues
 - Boots through the strap / Zapper screens, the Zoo and n-Fusion logos, the title, the menus (Play Game, Single
   Wield, 1 player, character, stage, skill level) into the first stage ("When Donuts Collide"): shooting, score,

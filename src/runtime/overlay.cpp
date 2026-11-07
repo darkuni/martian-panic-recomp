@@ -3,8 +3,8 @@
 // UI state is changed on the emulation thread (input); drawing happens on the
 // presentation thread after the game frame is blitted.
 #if defined(_WIN32) || defined(USE_SDL)
-#ifdef _WIN32
 #include "game.h"
+#ifdef _WIN32
 #include "glad.h"
 #else
 #define GL_GLEXT_PROTOTYPES
@@ -38,7 +38,12 @@ static const std::vector<Item>& items() {
         {"Aspect ratio", {"4:3", "16:9 widescreen"}, "The game's own layout switches after a restart."},
         {"VSync", {"Off", "On"}, nullptr},
         {"Fullscreen", {"Off", "On"}, nullptr},
+#ifdef G_MOUSE_SWAP_DEFAULT
+        {"Mouse buttons", {"Left = A, right = B (fire)", "Left = B (fire), right = A"}, "The mouse is the Wii Remote pointer; B is the trigger."},
+#else
         {"Mouse buttons", {"Left = A, right = B", "Left = B, right = A"}, "The mouse is the Wii Remote pointer."},
+#endif
+        {"Capture mouse", {"Off", "On"}, "Keeps the cursor inside the window while playing."},
         {"Swap A/B and X/Y", {"Off", "On"}, "Gamepad: use the face buttons by position (Nintendo style)."},
         {"Frame rate display", {"Off", "On"}, nullptr},
         {"Anti-aliasing", {"Off", "2x MSAA", "4x MSAA", "8x MSAA"}, "Smooths jagged edges of 3D models."},
@@ -57,12 +62,13 @@ static int get_value(int i) {
         case 2: return g_cfg.vsync ? 1 : 0;
         case 3: return g_cfg.fullscreen ? 1 : 0;
         case 4: return g_cfg.controls == "mouse_swap" ? 1 : 0;
-        case 5: return g_cfg.swap_ab_xy ? 1 : 0;
-        case 6: return g_cfg.show_perf ? 1 : 0;
-        case 7: return g_cfg.msaa >= 8 ? 3 : g_cfg.msaa >= 4 ? 2 : g_cfg.msaa >= 2 ? 1 : 0;
-        case 8: return g_cfg.smooth_textures ? 1 : 0;
-        case 9: return std::max(1, std::min(8, g_cfg.speed)) - 1;
-        case 10: return g_cfg.anisotropy >= 16 ? 4 : g_cfg.anisotropy >= 8 ? 3 : g_cfg.anisotropy >= 4 ? 2 : g_cfg.anisotropy >= 2 ? 1 : 0;
+        case 5: return g_cfg.capture_mouse ? 1 : 0;
+        case 6: return g_cfg.swap_ab_xy ? 1 : 0;
+        case 7: return g_cfg.show_perf ? 1 : 0;
+        case 8: return g_cfg.msaa >= 8 ? 3 : g_cfg.msaa >= 4 ? 2 : g_cfg.msaa >= 2 ? 1 : 0;
+        case 9: return g_cfg.smooth_textures ? 1 : 0;
+        case 10: return std::max(1, std::min(8, g_cfg.speed)) - 1;
+        case 11: return g_cfg.anisotropy >= 16 ? 4 : g_cfg.anisotropy >= 8 ? 3 : g_cfg.anisotropy >= 4 ? 2 : g_cfg.anisotropy >= 2 ? 1 : 0;
     }
     return 0;
 }
@@ -73,12 +79,13 @@ static void set_value(int i, int v) {
         case 2: g_cfg.vsync = v; break;
         case 3: g_cfg.fullscreen = v; break;
         case 4: g_cfg.controls = v ? "mouse_swap" : "mouse"; break;
-        case 5: g_cfg.swap_ab_xy = v; break;
-        case 6: g_cfg.show_perf = v; break;
-        case 7: g_cfg.msaa = v ? 1 << v : 1; break;
-        case 8: g_cfg.smooth_textures = v; break;
-        case 9: g_cfg.speed = v + 1; break;
-        case 10: g_cfg.anisotropy = v ? 1 << v : 1; break;
+        case 5: g_cfg.capture_mouse = v; break;
+        case 6: g_cfg.swap_ab_xy = v; break;
+        case 7: g_cfg.show_perf = v; break;
+        case 8: g_cfg.msaa = v ? 1 << v : 1; break;
+        case 9: g_cfg.smooth_textures = v; break;
+        case 10: g_cfg.speed = v + 1; break;
+        case 11: g_cfg.anisotropy = v ? 1 << v : 1; break;
     }
     config_save();
 }

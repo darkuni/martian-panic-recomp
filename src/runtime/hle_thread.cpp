@@ -31,6 +31,7 @@ struct HThread {
     bool go = false;
     bool exiting = false;    // thread function returned: running OSExitThread
     bool restart = false;    // a new thread was created on this (exited) context
+    bool gl_release = false; // another guest thread needs the GL context: give it up (see gl_owner_prepare)
     uint32_t guest_ctx = 0;
     uint32_t saved_pc = 0;   // SRR0 our last OSSaveContext wrote (a context the game rewrote is a new thread)
     uint32_t entry = 0;
@@ -83,17 +84,40 @@ void hle_OSSaveContext(Ctx* c) {
     c->r[3] = 0;
 }
 
+// The GL context is current on one host thread at a time. It stays with the guest thread that last did
+// GX work across thread switches; when another guest thread needs it, the holder (blocked in switch_to)
+// is woken to release it. Releasing on every switch cost a driver flush each time (on Windows up to a
+// display refresh), and Martian Panic's loader switches threads dozens of times per frame.
 void gl_platform_release();
+static HThread* g_gl_holder = nullptr;
+static std::condition_variable g_gl_cv;
+void gl_owner_prepare() {
+    if (!t_self || !t_lock) return;
+    if (g_gl_holder && g_gl_holder != t_self) {
+        HThread* h = g_gl_holder;
+        h->gl_release = true;
+        h->cv.notify_one();
+        while (g_gl_holder == h) g_gl_cv.wait(*t_lock);
+    }
+    g_gl_holder = t_self;
+}
+static void serve_gl_release(HThread* me) {
+    if (!me->gl_release) return;
+    me->gl_release = false;
+    gl_platform_release();
+    if (g_gl_holder == me) g_gl_holder = nullptr;
+    g_gl_cv.notify_all();
+}
 static void switch_to(HThread* next) {
     HThread* me = t_self;
     if (next == me) return;
-    gl_platform_release();   // the next thread may do GX work (the GL context is one thread's at a time)
     g_switches++;
     if (g_dbg) fprintf(g_log, "[sched] %08X -> %08X\n", me->guest_ctx, next->guest_ctx);
     next->go = true;
     next->cv.notify_one();
     me->go = false;
-    while (!me->go) me->cv.wait(*t_lock);
+    while (!me->go) { me->cv.wait(*t_lock); serve_gl_release(me); }
+    serve_gl_release(me);
     // this thread exited and a new one was created on its context: drop the old host stack
     if (me->restart) __builtin_longjmp(me->restart_env, 1);
 }
